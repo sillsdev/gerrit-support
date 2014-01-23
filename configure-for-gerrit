@@ -23,7 +23,7 @@ PORT=$(expr "$URL" : 'ssh://[^:/]*:\([^:/]*\)')
 if [ -z "$HOST" -o -z "$PORT" ]
 then
     exec >&2
-    if [[ "$URL" =~ github.com ]]
+    if expr "$URL" : '.*github.com' >/dev/null
     then
         echo "This is a GitHub repo."
     elif [ -n "$1" ]
