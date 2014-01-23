@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Generic hook wrapper that calls sub-hooks
+
+set -e
+
+for SUBHOOK in "$0"?*
+do
+	"$SUBHOOK" "$@"
+done

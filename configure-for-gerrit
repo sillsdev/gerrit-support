@@ -1,0 +1,81 @@
+#!/bin/bash
+
+# Set up a repo to use gerrit
+
+if ! GIT_DIR=$(git rev-parse --git-dir)
+then
+    echo "You need to run this in a git working directory." >&2
+    echo "Clone the repo and cd to it before running this script." >&2 
+    exit 1
+fi
+
+# Set up the Gerrit URL
+
+URL=$1
+if [ -z "$URL" ]
+then
+    URL=$(git config remote.origin.url)
+fi
+
+HOST=$(expr "$URL" : 'ssh://\([^:/]*\)')
+PORT=$(expr "$URL" : 'ssh://[^:/]*:\([^:/]*\)')
+
+if [ -z "$HOST" -o -z "$PORT" ]
+then
+    exec >&2
+    if [[ "$URL" =~ github.com ]]
+    then
+        echo "This is a GitHub repo."
+    elif [ -n "$1" ]
+    then
+        echo "That URL doesn't seem to refer to a Gerrit server."
+    else
+        echo "This doesn't seem to be a repo that was cloned from a Gerrit server."
+    fi
+    echo
+    echo "Please provide the ssh URL of your Gerrit repo on the command line."
+    echo "You can obtain this from the project list in the Gerrit web UI."
+    exit 2
+fi
+
+# Check URL validity (and SSH credentials)
+echo "Checking ssh access to Gerrit ..."
+if ! ssh -p "$PORT" "$HOST" gerrit version
+then
+    echo "Failed to access Gerrit" >&2
+    echo "Please check your URL and try again" >&2
+    exit 3
+fi
+
+set -e
+
+git config remote.origin.url "$URL"
+
+# Configure pull behavior
+
+git config branch.autosetupmerge true
+git config branch.autosetuprebase always
+
+for BRANCH in $(git branch | cut -c3-)
+do
+    git config branch.$BRANCH.rebase true
+done
+
+# Adjust the default push behavior to send for review
+
+git config remote.origin.push +refs/heads/*:refs/for/*
+
+# Add the hooks we need
+
+rm -f "$GIT_DIR"/hooks/*.sample
+cp -a "$(dirname "$0")"/hooks/* "$GIT_DIR"/hooks/
+echo "Fetching Gerrit's commit-msg hook ..."
+scp -p -P "$PORT" "$HOST":hooks/commit-msg "$GIT_DIR"/hooks/commit-msg.99-gerrit
+
+# Synchronize
+
+echo "Updating remote tracking branches ..."
+git remote update -p
+
+echo "This repo is now ready for use with Gerrit."
+echo "Make some commits and use 'git push' to send them for review."
