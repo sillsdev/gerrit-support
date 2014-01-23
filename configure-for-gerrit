@@ -2,6 +2,22 @@
 
 # Set up a repo to use gerrit
 
+usage()
+{
+    echo "Usage: $(basename "$0") [URL]"
+}
+
+# Use bolding in messages, if possible
+BOLD=$(tput bold 2>/dev/null)
+NORM=$(tput sgr0 2>/dev/null)
+
+milepost()
+{
+    echo "$BOLD$@$NORM"
+}
+
+# Check the current directory
+
 if ! GIT_DIR=$(git rev-parse --git-dir)
 then
     echo "You need to run this in a git working directory." >&2
@@ -9,7 +25,7 @@ then
     exit 1
 fi
 
-# Set up the Gerrit URL
+# Check the Gerrit URL
 
 URL=$1
 if [ -z "$URL" ]
@@ -33,21 +49,25 @@ then
         echo "This doesn't seem to be a repo that was cloned from a Gerrit server."
     fi
     echo
+    usage
+    echo
     echo "Please provide the ssh URL of your Gerrit repo on the command line."
     echo "You can obtain this from the project list in the Gerrit web UI."
     exit 2
 fi
 
-# Check URL validity (and SSH credentials)
-echo "Checking ssh access to Gerrit ..."
+milepost "Checking ssh access to Gerrit ..."
+
 if ! ssh -p "$PORT" "$HOST" gerrit version
 then
     echo "Failed to access Gerrit" >&2
-    echo "Please check your URL and try again" >&2
+    echo "Please check your URL and SSH credentials and try again" >&2
     exit 3
 fi
 
 set -e
+
+# Configure fetch behavior
 
 git config remote.origin.url "$URL"
 
@@ -69,13 +89,19 @@ git config remote.origin.push +refs/heads/*:refs/for/*
 
 rm -f "$GIT_DIR"/hooks/*.sample
 cp -a "$(dirname "$0")"/hooks/* "$GIT_DIR"/hooks/
-echo "Fetching Gerrit's commit-msg hook ..."
+
+milepost "Fetching Gerrit's commit-msg hook ..."
+
 scp -p -P "$PORT" "$HOST":hooks/commit-msg "$GIT_DIR"/hooks/commit-msg.99-gerrit
 
 # Synchronize
 
-echo "Updating remote tracking branches ..."
+milepost "Updating remote tracking branches ..."
+
 git remote update -p
 
-echo "This repo is now ready for use with Gerrit."
-echo "Make some commits and use 'git push' to send them for review."
+# Finish
+
+milepost "This repo is now ready for use with Gerrit"
+
+echo "Use 'git push' to send commits for review"
