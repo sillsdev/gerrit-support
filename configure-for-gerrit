@@ -94,6 +94,13 @@ milepost "Fetching Gerrit's commit-msg hook ..."
 
 scp -p -P "$PORT" "$HOST":hooks/commit-msg "$GIT_DIR"/hooks/commit-msg.99-gerrit
 
+# Add commands
+
+mkdir -p ~/bin
+cp -a "$(dirname "$0")"/git-review ~/bin
+
+git config --global "guitool.Send for review.cmd" "git review"
+
 # Synchronize
 
 milepost "Updating remote tracking branches ..."
@@ -104,4 +111,7 @@ git remote update -p
 
 milepost "This repo is now ready for use with Gerrit"
 
-echo "Use 'git push' to send commits for review"
+echo "To send commits for review, use:
+  git review
+or:
+  Tools > Send for review"

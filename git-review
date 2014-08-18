@@ -1,0 +1,22 @@
+#!/bin/bash -e
+
+# Submit a change for review
+
+# Allow single-arg options to be passed to push -- principally -n
+OPTIONS=()
+while [[ "$1" == -* ]]
+do
+	OPTIONS+=("$1")
+	shift
+done
+
+COMMIT=${3-HEAD}
+SOURCE=${2-$(git symbolic-ref -q "$COMMIT" 2>/dev/null || git name-rev --name-only "$COMMIT" 2>/dev/null)}
+TARGET=${1-develop}
+
+SOURCE=${SOURCE#refs/heads/}
+if [ "$SOURCE" = "$TARGET" ]; then
+	SOURCE=
+fi
+
+git push "${OPTIONS[@]}" origin "$COMMIT:refs/for/$TARGET${SOURCE:+/}$SOURCE"
