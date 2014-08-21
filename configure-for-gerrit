@@ -115,3 +115,10 @@ echo "To send commits for review, use:
   git review
 or:
   Tools > Send for review"
+
+if ! type git-review >/dev/null 2>&1
+then
+    echo "${BOLD}Please add ~/bin to your PATH variable${NORM}"
+    echo "On many systems, you just need to log out and it will be added automatically"
+    echo "when you log in. However, you can also add it temporarily using PATH=~/bin:\$PATH"
+fi
