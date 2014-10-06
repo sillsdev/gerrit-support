@@ -8,8 +8,10 @@
 # - Second line:     empty
 # - Following lines: no more than 70 chars
 
-FIRSTLINE_LEN=62
-LINE_LEN=70
+FIRSTLINE_LEN=$(git config --get lsdev.firstlinelen)
+LINE_LEN=$(git config --get lsdev.linelen)
+FIRSTLINE_LEN=${FIRSTLINE_LEN:-62}
+LINE_LEN=${LINE_LEN:-70}
 ERRORHEADER="[POLICY] Your commit message is not formatted correctly."
 
 OutputError()
